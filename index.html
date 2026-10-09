@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DareVPN</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#fff;--fg:#000;--g1:#f2f2f2;--g2:#d9d9d9;--g3:#777}
+@media (prefers-color-scheme:dark){:root{--bg:#000;--fg:#fff;--g1:#141414;--g2:#2c2c2c;--g3:#8a8a8a}}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{min-height:100vh;background:var(--bg);color:var(--fg);font:500 16px/1.4 "Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;padding-top:env(safe-area-inset-top)}
+.app{max-width:480px;margin:0 auto;padding:20px 18px 120px}
+.top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px}
+.top h1{font-size:26px;font-weight:900;letter-spacing:-.04em}
+.top span{font-size:14px;color:var(--g3)}
+h2{font-size:13px;font-weight:700;color:var(--g3);margin:34px 0 12px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.hero{background:var(--fg);color:var(--bg);border-radius:28px;padding:26px 22px 22px}
+.state{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
+.state:before{content:"";width:9px;height:9px;border-radius:50%;border:2px solid var(--bg)}
+.state.on:before{background:var(--bg)}
+.hero h3{font-size:44px;line-height:1;font-weight:900;letter-spacing:-.05em;margin:14px 0 22px}
+.power{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px;border-radius:99px;background:var(--bg);color:var(--fg);font-size:18px;font-weight:800;transition:transform .12s}
+.power:active{transform:scale(.97)}
+.power svg{width:22px;height:22px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
+.power.on{background:transparent;color:var(--bg);box-shadow:inset 0 0 0 2px var(--bg)}
+.key{display:flex;gap:10px;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(128,128,128,.5)}
+.key code{flex:1;font:600 13px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85}
+.mini{font-size:14px;font-weight:700;padding:7px 14px;border-radius:99px;box-shadow:inset 0 0 0 1.5px currentColor}
+.hero .mini{color:var(--bg)}
+.mini:active{opacity:.5}
+.perks div{display:flex;justify-content:space-between;align-items:baseline;padding:15px 0;border-bottom:1px solid var(--g2)}
+.perks b{font-size:20px;font-weight:800;letter-spacing:-.02em}.perks span{color:var(--g3);font-size:14px}
+.plan{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:18px 20px;margin-bottom:10px;border-radius:20px;background:var(--g1);transition:background .12s,color .12s}
+.plan:active{transform:scale(.985)}
+.plan .l b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em}
+.plan .l span{font-size:13px;color:var(--g3)}
+.plan .r{font-size:30px;font-weight:900;letter-spacing:-.05em}
+.plan.sel{background:var(--fg);color:var(--bg)}
+.plan.sel .l span{color:inherit;opacity:.65}
+.tag{display:inline-block;margin-left:8px;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;box-shadow:inset 0 0 0 1.5px currentColor;vertical-align:3px}
+.pay{display:block;width:100%;padding:18px;border-radius:99px;font-size:18px;font-weight:800;margin-top:14px;background:var(--fg);color:var(--bg);transition:transform .12s}
+.pay:active{transform:scale(.97)}
+.pay.alt{background:transparent;color:var(--fg);box-shadow:inset 0 0 0 2px var(--fg)}
+.refsub{font-size:15px;opacity:.75}
+.steps div{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--g2);font-weight:700}
+.steps i{flex:none;width:32px;height:32px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--fg);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:14px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:26px}
+.stat{background:var(--g1);border-radius:20px;padding:18px}
+.stat b{display:block;font-size:40px;font-weight:900;letter-spacing:-.05em;line-height:1}
+.stat span{font-size:13px;color:var(--g3)}
+.box{display:flex;gap:10px;align-items:center;background:var(--g1);border-radius:18px;padding:10px 10px 10px 16px}
+.box code{flex:1;font:600 13px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.box .mini{background:var(--fg);color:var(--bg);box-shadow:none}
+.row{display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--g2)}
+.row span{color:var(--g3)}.row b{font-weight:800}
+nav{position:fixed;left:0;right:0;bottom:0;padding:10px 18px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 40%)}
+nav div{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);background:var(--fg);border-radius:99px;padding:6px}
+nav button{color:var(--bg);opacity:.55;padding:13px 0;border-radius:99px;font-size:15px;font-weight:800}
+nav button.on{opacity:1;background:var(--bg);color:var(--fg)}
+.tab{display:none}.tab.on{display:block}
+.toast{position:fixed;left:50%;bottom:104px;transform:translateX(-50%) translateY(12px);background:var(--fg);color:var(--bg);border-radius:99px;padding:11px 20px;font-size:15px;font-weight:700;opacity:0;pointer-events:none;transition:.18s;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%)}
+button:focus-visible{outline:3px solid var(--g3);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="top"><h1 id="brand"></h1><span id="hi"></span></div>
+
+<section class="tab on" id="t-home">
+  <div class="hero">
+    <div class="state" id="state">Нет подписки</div>
+    <h3 id="heroTitle">VPN выключен</h3>
+    <button class="power" id="power"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></svg><span id="powerTxt">Подключиться</span></button>
+    <div class="key"><code id="key"></code><button class="mini" id="copyKey">Копировать</button></div>
+  </div>
+
+  <h2>Что входит</h2>
+  <div class="perks">
+    <div><b>Безлимитный трафик</b><span>на всех серверах</span></div>
+    <div><b>3 устройства</b><span>одновременно</span></div>
+    <div><b>Быстрые серверы</b><span>низкий пинг</span></div>
+  </div>
+
+  <h2>Тариф</h2>
+  <div id="plans"></div>
+  <button class="pay" id="paySbp"></button>
+  <button class="pay alt" id="payStars"></button>
+</section>
+
+<section class="tab" id="t-ref">
+  <div class="hero">
+    <div class="state on">Реферальная программа</div>
+    <h3 style="margin-bottom:10px"><span id="bonus"></span> дня</h3>
+    <p class="refsub">за каждого приглашённого друга</p>
+    <p class="refsub" id="friendBonus" style="margin-top:6px"></p>
+  </div>
+  <h2>Как это работает</h2>
+  <div class="steps">
+    <div><i>1</i><span>Отправь другу свою ссылку</span></div>
+    <div><i>2</i><span>Друг оплачивает первую подписку</span></div>
+    <div><i>3</i><span>Бонусные дни получаете вы оба</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>0</b><span>друзей</span></div>
+    <div class="stat"><b>0</b><span>дней бонуса</span></div>
+  </div>
+  <h2>Твоя ссылка</h2>
+  <div class="box"><code id="ref"></code><button class="mini" id="copyRef">Копировать</button></div>
+  <button class="pay" id="share">Поделиться ссылкой</button>
+</section>
+
+<section class="tab" id="t-me">
+  <h2>Профиль</h2>
+  <div class="row"><span>Имя</span><b id="uname">Гость</b></div>
+  <div class="row"><span>Статус</span><b id="uStatus">Неактивна</b></div>
+  <div class="row"><span>Истекает</span><b id="uExp">—</b></div>
+  <div class="row"><span>Устройства</span><b>до 3</b></div>
+  <button class="pay alt" id="support">Написать в поддержку</button>
+</section>
+
+</div>
+
+<nav><div id="nav">
+  <button class="on" data-t="home">Главная</button>
+  <button data-t="ref">Друзья</button>
+  <button data-t="me">Профиль</button>
+</div></nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== НАСТРОЙКИ: меняйте здесь ===== */
+const CONFIG = {
+  brand: "DareVPN",
+  supportUrl: "https://t.me/ВАШ_АККАУНТ_ПОДДЕРЖКИ",
+  botLink: "https://t.me/ВАШ_БОТ?start=ref_",
+  subscriptionKey: "",   // ссылку подписки подставляет бот/сервер
+  active: false,         // true, если подписка активна
+  expires: "",           // например "06.11.2026"
+  refBonusDays: 3,
+  starsPrice: 199,       // цена в звёздах, поменяйте на свою
+  hitMonths: 6,          // у какого тарифа метка «Хит»
+  plans: [
+    {m:1,  price:199},
+    {m:3,  price:529},
+    {m:6,  price:959},
+    {m:12, price:1699}
+  ]
+};
+/* ==================================== */
+
+/* Бот может открыть приложение со ссылкой вида ...?key=ССЫЛКА&exp=06.11.2026 */
+const q=new URLSearchParams(location.search);
+if(q.get('key')){CONFIG.subscriptionKey=q.get('key');CONFIG.active=!!q.get('exp');CONFIG.expires=q.get('exp')||''}
+
+const $=id=>document.getElementById(id);
+const tg=window.Telegram&&window.Telegram.WebApp;
+if(tg){tg.ready();tg.expand();}
+const user=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
+let sel=CONFIG.hitMonths, on=false;
+
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800)}
+function monthWord(m){return m===1?'месяц':(m<5?'месяца':'месяцев')}
+function copy(text){
+  if(!text){toast('Сначала оформи подписку');return}
+  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>toast('Скопировано')).catch(()=>toast('Не удалось скопировать'));
+}
+function buzz(){if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred('light')}
+
+$('brand').textContent=CONFIG.brand;
+document.title=CONFIG.brand;
+$('hi').textContent=user?user.first_name:'';
+$('uname').textContent=user?user.first_name:'Гость';
+$('key').textContent=CONFIG.subscriptionKey||'Ключ появится после оплаты';
+$('ref').textContent=CONFIG.botLink+(user?user.id:'');
+$('bonus').textContent='+'+CONFIG.refBonusDays;
+$('friendBonus').textContent='Другу тоже +'+CONFIG.refBonusDays+' дня при первой оплате';
+$('payStars').textContent='Оплатить звёздами · '+CONFIG.starsPrice+' ★';
+
+if(CONFIG.active){
+  $('state').textContent='Активна до '+CONFIG.expires;$('state').classList.add('on');
+  $('uStatus').textContent='Активна';$('uExp').textContent=CONFIG.expires;
+}
+
+const base=CONFIG.plans[0].price/CONFIG.plans[0].m;
+function renderPlans(){
+  $('plans').innerHTML=CONFIG.plans.map(p=>{
+    const per=Math.round(p.price/p.m), off=Math.round((1-(p.price/p.m)/base)*100);
+    return '<button class="plan'+(p.m===sel?' sel':'')+'" data-m="'+p.m+'"><div class="l"><b>'+p.m+' '+monthWord(p.m)+
+      (p.m===CONFIG.hitMonths?'<span class="tag">Хит</span>':'')+'</b><span>'+per+' ₽ в месяц'+(off>0?' · скидка '+off+'%':'')+
+      '</span></div><div class="r">'+p.price+' ₽</div></button>';
+  }).join('');
+  $('paySbp').textContent='Оплатить через СБП · '+CONFIG.plans.find(x=>x.m===sel).price+' ₽';
+}
+$('plans').addEventListener('click',e=>{const b=e.target.closest('.plan');if(b){sel=+b.dataset.m;renderPlans();buzz()}});
+renderPlans();
+
+$('nav').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+b.dataset.t));
+  scrollTo(0,0);buzz();
+});
+
+$('power').onclick=()=>{
+  if(!CONFIG.subscriptionKey){toast('Сначала оформи подписку');return}
+  /* Включает VPN приложение-клиент: открываем ссылку подписки */
+  on=!on;$('power').classList.toggle('on',on);
+  $('powerTxt').textContent=on?'Открываем клиент…':'Подключиться';
+  $('heroTitle').textContent=on?'VPN включается':'VPN выключен';
+  if(on){tg?tg.openLink(CONFIG.subscriptionKey):location.href=CONFIG.subscriptionKey}
+  buzz();
+};
+
+function pay(method){
+  const p=CONFIG.plans.find(x=>x.m===sel);
+  const order={method:method,months:p.m,price:p.price};
+  /* Здесь подключается ваш сервер оплаты. Сейчас заказ уходит боту. */
+  if(tg){tg.sendData(JSON.stringify(order))}else{toast('Демо: '+method+', '+p.m+' мес., '+p.price+' ₽')}
+}
+$('paySbp').onclick=()=>pay('sbp');
+$('payStars').onclick=()=>pay('stars');
+$('copyKey').onclick=()=>copy(CONFIG.subscriptionKey);
+$('copyRef').onclick=()=>copy($('ref').textContent);
+$('share').onclick=()=>{const u='https://t.me/share/url?url='+encodeURIComponent($('ref').textContent);tg?tg.openTelegramLink(u):copy($('ref').textContent)};
+$('support').onclick=()=>tg?tg.openTelegramLink(CONFIG.supportUrl):toast('Укажи supportUrl в настройках');
+</script>
+</body>
+</html>
