@@ -83,32 +83,33 @@ button:focus-visible{outline:3px solid var(--g3);outline-offset:2px}
   <h2>Что входит</h2>
   <div class="perks">
     <div><b>Безлимитный трафик</b><span>на всех серверах</span></div>
-    <div><b>3 устройства</b><span>одновременно</span></div>
+    <div><b>1 устройство</b><span id="devPerk">ещё — 2 ₽ в день</span></div>
     <div><b>Быстрые серверы</b><span>низкий пинг</span></div>
   </div>
 
   <h2>Тариф</h2>
   <div id="plans"></div>
-  <button class="pay" id="paySbp"></button>
-  <button class="pay alt" id="payStars"></button>
+  <button class="pay" id="pay"></button>
+  <p id="payNote" style="font-size:13px;color:var(--g3);text-align:center;margin-top:10px">Крипта, Telegram Stars или баланс — выберете в боте</p>
+  <button class="pay alt" id="trialBtn" style="display:none"></button>
 </section>
 
 <section class="tab" id="t-ref">
   <div class="hero">
     <div class="state on">Реферальная программа</div>
-    <h3 style="margin-bottom:10px"><span id="bonus"></span> дня</h3>
-    <p class="refsub">за каждого приглашённого друга</p>
-    <p class="refsub" id="friendBonus" style="margin-top:6px"></p>
+    <h3 style="margin-bottom:10px"><span id="bonus"></span>%</h3>
+    <p class="refsub">от каждой оплаты друга — тебе на баланс</p>
+    <p class="refsub" style="margin-top:6px">Баланс можно потратить на подписку</p>
   </div>
   <h2>Как это работает</h2>
   <div class="steps">
     <div><i>1</i><span>Отправь другу свою ссылку</span></div>
-    <div><i>2</i><span>Друг оплачивает первую подписку</span></div>
-    <div><i>3</i><span>Бонусные дни получаете вы оба</span></div>
+    <div><i>2</i><span>Друг оплачивает подписку</span></div>
+    <div><i>3</i><span>Процент от оплаты падает тебе на баланс</span></div>
   </div>
   <div class="stats">
-    <div class="stat"><b>0</b><span>друзей</span></div>
-    <div class="stat"><b>0</b><span>дней бонуса</span></div>
+    <div class="stat"><b id="refN">0</b><span>друзей</span></div>
+    <div class="stat"><b id="refBal">0 ₽</b><span>на балансе</span></div>
   </div>
   <h2>Твоя ссылка</h2>
   <div class="box"><code id="ref"></code><button class="mini" id="copyRef">Копировать</button></div>
@@ -120,7 +121,8 @@ button:focus-visible{outline:3px solid var(--g3);outline-offset:2px}
   <div class="row"><span>Имя</span><b id="uname">Гость</b></div>
   <div class="row"><span>Статус</span><b id="uStatus">Неактивна</b></div>
   <div class="row"><span>Истекает</span><b id="uExp">—</b></div>
-  <div class="row"><span>Устройства</span><b>до 3</b></div>
+  <div class="row"><span>Устройства</span><b id="uDev">1</b></div>
+  <div class="row"><span>Баланс</span><b id="uBal">0 ₽</b></div>
   <button class="pay alt" id="support">Написать в поддержку</button>
 </section>
 
@@ -134,101 +136,112 @@ button:focus-visible{outline:3px solid var(--g3);outline-offset:2px}
 <div class="toast" id="toast"></div>
 
 <script>
-/* ===== НАСТРОЙКИ: меняйте здесь ===== */
+/* ===== НАСТРОЙКИ =====
+   Цены, статус подписки и ссылку присылает бот в адресе приложения,
+   поэтому цены меняются в админке бота, а здесь только запасные значения. */
 const CONFIG = {
   brand: "DareVPN",
-  supportUrl: "https://t.me/ВАШ_АККАУНТ_ПОДДЕРЖКИ",
-  botLink: "https://t.me/ВАШ_БОТ?start=ref_",
-  subscriptionKey: "",   // ссылку подписки подставляет бот/сервер
-  active: false,         // true, если подписка активна
-  expires: "",           // например "06.11.2026"
-  refBonusDays: 3,
-  starsPrice: 199,       // цена в звёздах, поменяйте на свою
+  bot: "dare_vpn_bot",   // юзернейм бота без @
   hitMonths: 6,          // у какого тарифа метка «Хит»
-  plans: [
-    {m:1,  price:199},
-    {m:3,  price:529},
-    {m:6,  price:959},
-    {m:12, price:1699}
-  ]
+  refPercent: 20,
+  devicePrice: 2,
+  plans: [ {m:1, price:169}, {m:3, price:439}, {m:6, price:849}, {m:12, price:1549} ]
 };
-/* ==================================== */
+/* ===================== */
 
-/* Бот может открыть приложение со ссылкой вида ...?key=ССЫЛКА&exp=06.11.2026 */
-const q=new URLSearchParams(location.search);
-if(q.get('key')){CONFIG.subscriptionKey=q.get('key');CONFIG.active=!!q.get('exp');CONFIG.expires=q.get('exp')||''}
+const q = new URLSearchParams(location.search);
+if (q.get('bot')) CONFIG.bot = q.get('bot');
+if (q.get('p')) {
+  const pl = q.get('p').split(',').map(x => x.split(':').map(Number)).filter(x => x[0] > 0 && x[1] > 0);
+  if (pl.length) CONFIG.plans = pl.map(x => ({m: x[0], price: x[1]}));
+}
+const num = (k, d) => { const v = parseInt(q.get(k), 10); return isNaN(v) ? d : v; };
+CONFIG.devicePrice = num('dev', CONFIG.devicePrice);
+CONFIG.refPercent = num('ref', CONFIG.refPercent);
+const KEY = q.get('key') || '';
+const EXP = q.get('exp') || '';
+const DEVICES = num('dv', 1), BAL = num('bal', 0), REFN = num('refn', 0), TRIAL = num('trial', 0);
 
-const $=id=>document.getElementById(id);
-const tg=window.Telegram&&window.Telegram.WebApp;
-if(tg){tg.ready();tg.expand();}
-const user=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
-let sel=CONFIG.hitMonths, on=false;
+const $ = id => document.getElementById(id);
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+const BOT = 'https://t.me/' + CONFIG.bot;
+let sel = CONFIG.plans.some(p => p.m === CONFIG.hitMonths) ? CONFIG.hitMonths : CONFIG.plans[0].m;
 
-function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800)}
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200)}
 function monthWord(m){return m===1?'месяц':(m<5?'месяца':'месяцев')}
-function copy(text){
+function copy(text, msg){
   if(!text){toast('Сначала оформи подписку');return}
-  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>toast('Скопировано')).catch(()=>toast('Не удалось скопировать'));
+  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>toast(msg||'Скопировано')).catch(()=>toast('Не удалось скопировать'));
 }
 function buzz(){if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred('light')}
-
-$('brand').textContent=CONFIG.brand;
-document.title=CONFIG.brand;
-$('hi').textContent=user?user.first_name:'';
-$('uname').textContent=user?user.first_name:'Гость';
-$('key').textContent=CONFIG.subscriptionKey||'Ключ появится после оплаты';
-$('ref').textContent=CONFIG.botLink+(user?user.id:'');
-$('bonus').textContent='+'+CONFIG.refBonusDays;
-$('friendBonus').textContent='Другу тоже +'+CONFIG.refBonusDays+' дня при первой оплате';
-$('payStars').textContent='Оплатить звёздами · '+CONFIG.starsPrice+' ★';
-
-if(CONFIG.active){
-  $('state').textContent='Активна до '+CONFIG.expires;$('state').classList.add('on');
-  $('uStatus').textContent='Активна';$('uExp').textContent=CONFIG.expires;
+/* Открыть бота с командой и закрыть приложение */
+function toBot(start){
+  const u = BOT + '?start=' + start;
+  if (tg) { tg.openTelegramLink(u); setTimeout(() => tg.close(), 300); } else location.href = u;
 }
 
-const base=CONFIG.plans[0].price/CONFIG.plans[0].m;
+$('brand').textContent = CONFIG.brand;
+document.title = CONFIG.brand;
+$('hi').textContent = user ? user.first_name : '';
+$('uname').textContent = user ? user.first_name : 'Гость';
+$('key').textContent = KEY || 'Ссылка появится после оплаты';
+$('ref').textContent = BOT + '?start=ref_' + (user ? user.id : '');
+$('bonus').textContent = CONFIG.refPercent;
+$('refN').textContent = REFN;
+$('refBal').textContent = BAL + ' ₽';
+$('uBal').textContent = BAL + ' ₽';
+$('uDev').textContent = DEVICES;
+$('devPerk').textContent = 'ещё — ' + CONFIG.devicePrice + ' ₽ в день';
+
+if (EXP) {
+  $('state').textContent = 'Активна до ' + EXP; $('state').classList.add('on');
+  $('heroTitle').textContent = 'VPN готов';
+  $('powerTxt').textContent = 'Скопировать ссылку';
+  $('uStatus').textContent = 'Активна'; $('uExp').textContent = EXP;
+} else if (TRIAL) {
+  $('trialBtn').style.display = 'block';
+  $('trialBtn').textContent = 'Попробовать бесплатно · ' + TRIAL + ' дн.';
+}
+
+const base = CONFIG.plans[0].price / CONFIG.plans[0].m;
 function renderPlans(){
-  $('plans').innerHTML=CONFIG.plans.map(p=>{
-    const per=Math.round(p.price/p.m), off=Math.round((1-(p.price/p.m)/base)*100);
-    return '<button class="plan'+(p.m===sel?' sel':'')+'" data-m="'+p.m+'"><div class="l"><b>'+p.m+' '+monthWord(p.m)+
-      (p.m===CONFIG.hitMonths?'<span class="tag">Хит</span>':'')+'</b><span>'+per+' ₽ в месяц'+(off>0?' · скидка '+off+'%':'')+
-      '</span></div><div class="r">'+p.price+' ₽</div></button>';
+  $('plans').innerHTML = CONFIG.plans.map(p => {
+    const per = Math.round(p.price / p.m), off = Math.round((1 - (p.price / p.m) / base) * 100);
+    return '<button class="plan' + (p.m === sel ? ' sel' : '') + '" data-m="' + p.m + '"><div class="l"><b>' + p.m + ' ' + monthWord(p.m) +
+      (p.m === CONFIG.hitMonths ? '<span class="tag">Хит</span>' : '') + '</b><span>' + per + ' ₽ в месяц' + (off > 0 ? ' · скидка ' + off + '%' : '') +
+      '</span></div><div class="r">' + p.price + ' ₽</div></button>';
   }).join('');
-  $('paySbp').textContent='Оплатить через СБП · '+CONFIG.plans.find(x=>x.m===sel).price+' ₽';
+  $('pay').textContent = (EXP ? 'Продлить' : 'Оплатить') + ' · ' + CONFIG.plans.find(x => x.m === sel).price + ' ₽';
 }
-$('plans').addEventListener('click',e=>{const b=e.target.closest('.plan');if(b){sel=+b.dataset.m;renderPlans();buzz()}});
+$('plans').addEventListener('click', e => { const b = e.target.closest('.plan'); if (b) { sel = +b.dataset.m; renderPlans(); buzz(); } });
 renderPlans();
 
-$('nav').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+b.dataset.t));
-  scrollTo(0,0);buzz();
+$('nav').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.id === 't-' + b.dataset.t));
+  scrollTo(0, 0); buzz();
 });
 
-$('power').onclick=()=>{
-  if(!CONFIG.subscriptionKey){toast('Сначала оформи подписку');return}
-  /* Включает VPN приложение-клиент: открываем ссылку подписки */
-  on=!on;$('power').classList.toggle('on',on);
-  $('powerTxt').textContent=on?'Открываем клиент…':'Подключиться';
-  $('heroTitle').textContent=on?'VPN включается':'VPN выключен';
-  if(on){tg?tg.openLink(CONFIG.subscriptionKey):location.href=CONFIG.subscriptionKey}
+/* Главная кнопка: есть подписка — копируем ссылку для приложения VPN, нет — ведём к тарифам */
+$('power').onclick = () => {
   buzz();
+  if (!KEY) { $('plans').scrollIntoView({behavior: 'smooth'}); toast('Выбери тариф ниже'); return; }
+  copy(KEY, 'Ссылка скопирована — вставь её в Happ');
 };
 
-function pay(method){
-  const p=CONFIG.plans.find(x=>x.m===sel);
-  const order={method:method,months:p.m,price:p.price};
-  /* Здесь подключается ваш сервер оплаты. Сейчас заказ уходит боту. */
-  if(tg){tg.sendData(JSON.stringify(order))}else{toast('Демо: '+method+', '+p.m+' мес., '+p.price+' ₽')}
-}
-$('paySbp').onclick=()=>pay('sbp');
-$('payStars').onclick=()=>pay('stars');
-$('copyKey').onclick=()=>copy(CONFIG.subscriptionKey);
-$('copyRef').onclick=()=>copy($('ref').textContent);
-$('share').onclick=()=>{const u='https://t.me/share/url?url='+encodeURIComponent($('ref').textContent);tg?tg.openTelegramLink(u):copy($('ref').textContent)};
-$('support').onclick=()=>tg?tg.openTelegramLink(CONFIG.supportUrl):toast('Укажи supportUrl в настройках');
+const ID = {1: 'm1', 3: 'm3', 6: 'm6', 12: 'm12'};
+$('pay').onclick = () => { buzz(); toBot('buy_' + (ID[sel] || 'm1')); };
+$('trialBtn').onclick = () => { buzz(); toBot('trial'); };
+$('copyKey').onclick = () => copy(KEY, 'Ссылка скопирована — вставь её в Happ');
+$('copyRef').onclick = () => copy($('ref').textContent);
+$('share').onclick = () => {
+  const u = 'https://t.me/share/url?url=' + encodeURIComponent($('ref').textContent) + '&text=' + encodeURIComponent('Подключайся к ' + CONFIG.brand);
+  tg ? tg.openTelegramLink(u) : copy($('ref').textContent);
+};
+$('support').onclick = () => toBot('support');
 </script>
 </body>
 </html>
