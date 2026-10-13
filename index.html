@@ -198,7 +198,7 @@ $('devPerk').textContent = 'ещё — ' + CONFIG.devicePrice + ' ₽ в ден�
 if (EXP) {
   $('state').textContent = 'Активна до ' + EXP; $('state').classList.add('on');
   $('heroTitle').textContent = 'VPN готов';
-  $('powerTxt').textContent = 'Скопировать ссылку';
+  $('powerTxt').textContent = KEY.startsWith('https://') ? 'Подключить в 1 клик' : 'Скопировать ссылку';
   $('uStatus').textContent = 'Активна'; $('uExp').textContent = EXP;
 } else if (TRIAL) {
   $('trialBtn').style.display = 'block';
@@ -225,11 +225,13 @@ $('nav').addEventListener('click', e => {
   scrollTo(0, 0); buzz();
 });
 
-/* Главная кнопка: есть подписка — копируем ссылку для приложения VPN, нет — ведём к тарифам */
+/* Главная кнопка: есть подписка — открываем Happ с подпиской (страница open.html рядом), нет — ведём к тарифам */
 $('power').onclick = () => {
   buzz();
   if (!KEY) { $('plans').scrollIntoView({behavior: 'smooth'}); toast('Выбери тариф ниже'); return; }
-  copy(KEY, 'Ссылка скопирована — вставь её в Happ');
+  if (!KEY.startsWith('https://')) { copy(KEY, 'Ссылка скопирована — вставь её в Happ'); return; }
+  const page = new URL('open.html', location.href).href + '?u=' + encodeURIComponent(KEY);
+  tg ? tg.openLink(page) : (location.href = page);
 };
 
 const ID = {1: 'm1', 3: 'm3', 6: 'm6', 12: 'm12'};
