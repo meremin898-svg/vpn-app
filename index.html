@@ -90,7 +90,7 @@ button:focus-visible{outline:3px solid var(--g3);outline-offset:2px}
   <h2>Тариф</h2>
   <div id="plans"></div>
   <button class="pay" id="pay"></button>
-  <p id="payNote" style="font-size:13px;color:var(--g3);text-align:center;margin-top:10px">Крипта, Telegram Stars или баланс — выберете в боте</p>
+  <p id="payNote" style="font-size:13px;color:var(--g3);text-align:center;margin-top:10px">Крипта, Telegram Stars или баланс — выберете в боте.<br>Оплачивая, вы принимаете <a href="#" id="offerLink" style="color:inherit">оферту</a> и <a href="#" id="privacyLink" style="color:inherit">политику конфиденциальности</a>.</p>
   <button class="pay alt" id="trialBtn" style="display:none"></button>
 </section>
 
@@ -124,6 +124,11 @@ button:focus-visible{outline:3px solid var(--g3);outline-offset:2px}
   <div class="row"><span>Устройства</span><b id="uDev">1</b></div>
   <div class="row"><span>Баланс</span><b id="uBal">0 ₽</b></div>
   <button class="pay alt" id="support">Написать в поддержку</button>
+  <h2>Документы</h2>
+  <div class="steps">
+    <div id="docOffer" style="cursor:pointer"><span>📜 Публичная оферта</span></div>
+    <div id="docPrivacy" style="cursor:pointer"><span>🔒 Политика конфиденциальности</span></div>
+  </div>
 </section>
 
 </div>
@@ -145,7 +150,9 @@ const CONFIG = {
   hitMonths: 6,          // у какого тарифа метка «Хит»
   refPercent: 20,
   devicePrice: 2,
-  plans: [ {m:1, price:169}, {m:3, price:439}, {m:6, price:849}, {m:12, price:1549} ]
+  plans: [ {m:1, price:169}, {m:3, price:439}, {m:6, price:849}, {m:12, price:1549} ],
+  docOffer: "https://telegra.ph/PUBLICHNAYA-OFERTA-08-12-15",
+  docPrivacy: "https://telegra.ph/POLITIKA-KONFIDENCIALNOSTI-08-12-99"
 };
 /* ===================== */
 
@@ -244,6 +251,9 @@ $('share').onclick = () => {
   tg ? tg.openTelegramLink(u) : copy($('ref').textContent);
 };
 $('support').onclick = () => toBot('support');
+function openDoc(url){ return e => { if (e) e.preventDefault(); tg ? tg.openLink(url) : window.open(url, '_blank'); }; }
+$('docOffer').onclick = $('offerLink').onclick = openDoc(CONFIG.docOffer);
+$('docPrivacy').onclick = $('privacyLink').onclick = openDoc(CONFIG.docPrivacy);
 </script>
 </body>
 </html>
